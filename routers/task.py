@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from typing import Annotated
 from pydantic import BaseModel
 from routers import auth
@@ -49,8 +49,16 @@ async def get_all_my_tasks(user: user_dependancy, db: db_dependancy):
     
     return db.query(Task).filter(Task.owner_id == user.get("id")).all()
 
+@router.get("/get_task/{task_id}", status_code=status.HTTP_200_OK)
+async def get_task(user: user_dependancy, db: db_dependancy, task_id: int = Path(gt=0)):
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Failed")
+    task = db.query(Task).filter(Task.task_id == task_id, Task.owner_id == user.get("id")).first()
+    return task
+
+
 @router.put("/update_status/{task_id}", status_code=status.HTTP_200_OK)
-async def update_task_status(task_id: int, user: user_dependancy, db: db_dependancy):
+async def update_task_status(user: user_dependancy, db: db_dependancy, task_id: int = Path(gt=0)):
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Failed")
     
@@ -62,3 +70,17 @@ async def update_task_status(task_id: int, user: user_dependancy, db: db_dependa
     db.query(Task).filter(Task.task_id == task_id).update({"status": True})
     db.commit()
     return {"detail": "Task updated successfully"}
+
+@router.delete("/delete/{task_id}", status_code=status.HTTP_200_OK)
+async def delete_task(task_id: int, user: user_dependancy, db: db_dependancy):
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Failed")
+    
+    task = db.query(Task).filter(Task.task_id == task_id, Task.owner_id == user.get("id")).first()
+
+    if task is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task Not Found")
+    
+    db.query(Task).filter(Task.task_id == task_id, Task.owner_id == user.get("id")).delete()
+    db.commit()
+    return {"detail": "Task deleted successfully"}
