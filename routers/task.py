@@ -48,19 +48,17 @@ async def get_all_my_tasks(user: user_dependancy, db: db_dependancy):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Failed")
     
     task_model = db.query(Task).filter(Task.owner_id == user.get("id")).all()
-
-    if task_model.owner_id != user.get("id"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access Forbidden")
-    
     return task_model
 
 @router.get("/get_task/{task_id}", status_code=status.HTTP_200_OK)
 async def get_task(user: user_dependancy, db: db_dependancy, task_id: int = Path(gt=0)):
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Failed")
-    task = db.query(Task).filter(Task.task_id == task_id, Task.owner_id == user.get("id")).first()
-    return task
+    task_model = db.query(Task).filter(Task.task_id == task_id, Task.owner_id == user.get("id")).first()
 
+    if task_model is None or task_model.owner_id != user.get("id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access Forbidden")
+    return task_model
 
 @router.put("/update_status/{task_id}", status_code=status.HTTP_200_OK)
 async def update_task_status(user: user_dependancy, db: db_dependancy, task_id: int = Path(gt=0)):
