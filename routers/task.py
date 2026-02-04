@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Path
 from typing import Annotated
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from routers import auth
 from sqlalchemy.orm import Session
 from database import SessionLocal
@@ -20,8 +20,8 @@ def get_db():
         db.close()
 
 class CreateTaskRequestModel(BaseModel):
-    task_title: str
-    task_description: str
+    task_title: str = Field(min_length=2, max_length=100)
+    task_description: str = Field(min_length=5, max_length=500)
 
 db_dependancy = Annotated[Session, Depends(get_db)]
 user_dependancy = Annotated[dict, Depends(auth.get_currentuser)]
@@ -47,7 +47,12 @@ async def get_all_my_tasks(user: user_dependancy, db: db_dependancy):
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Failed")
     
-    return db.query(Task).filter(Task.owner_id == user.get("id")).all()
+    task_model = db.query(Task).filter(Task.owner_id == user.get("id")).all()
+
+    if task_model.owner_id != user.get("id"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access Forbidden")
+    
+    return task_model
 
 @router.get("/get_task/{task_id}", status_code=status.HTTP_200_OK)
 async def get_task(user: user_dependancy, db: db_dependancy, task_id: int = Path(gt=0)):
@@ -66,13 +71,15 @@ async def update_task_status(user: user_dependancy, db: db_dependancy, task_id: 
 
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task Not Found")
+    if task.status is True:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Completed Tasks cannot be updated")
     
     db.query(Task).filter(Task.task_id == task_id).update({"status": True})
     db.commit()
     return {"detail": "Task updated successfully"}
 
 @router.delete("/delete/{task_id}", status_code=status.HTTP_200_OK)
-async def delete_task(task_id: int, user: user_dependancy, db: db_dependancy):
+async def delete_task(user: user_dependancy, db: db_dependancy, task_id: int = Path(gt=0)):
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Failed")
     

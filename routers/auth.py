@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from starlette import status
 from sqlalchemy.orm import Session
 from typing import Annotated
-from jose import jwt, JWTError
+from jose import jwt
 from datetime import datetime, timedelta, timezone
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from database import SessionLocal
 from models import User as users
 from passlib.context import CryptContext
@@ -26,19 +26,23 @@ bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 class UserRequestModel(BaseModel):
-    username: str
-    full_name: str
-    email: str
-    password: str
-    role: str
+    username: str = Field(min_length=2, max_length=50)
+    full_name: str = Field(min_length=2, max_length=100)
+    email: str = Field(min_length=5, max_length=100)
+    password: str = Field(min_length=2, max_length=10)
+    role: str = Field(min_length=2, max_length=20)
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v):
+        allowed_roles = {"user", "admin"}
+        if v not in allowed_roles:
+            raise ValueError("Invalid role")
+        return v
 
 class Token(BaseModel):
     access_token: str
     token_type: str
-
-class LoginRequestModel(BaseModel):
-    username: str
-    password: str
 
 def get_user_from_token(token: str):
     to_decode = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -72,6 +76,10 @@ db_dependancy = Annotated[Session, Depends(get_db)]
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def register_user(user: UserRequestModel, db: db_dependancy):
+    existing_user = db.query(users).filter(users.username == user.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
     user_to_register = users(
         username=user.username,
         full_name=user.full_name,

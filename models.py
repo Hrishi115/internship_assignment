@@ -9,7 +9,7 @@ class User(Base):
     email = Column(String, unique=True)
     hashed_password = Column(String)
     full_name = Column(String)
-    role = Column(String)
+    role = Column(String, default="user")
     is_active = Column(Boolean, default=True)
 
 class Task(Base):
