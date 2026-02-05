@@ -10,9 +10,9 @@ load_dotenv()
 app = FastAPI()
 
 origins = [
-    "http://localhost:5173",  # React dev server
+    "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://internship-assignment-frontend-27wshlkk1.vercel.app",  # Add your Vercel domain later
+    "https://internship-assignment-frontend.vercel.app",
 ]
 
 app.add_middleware(
