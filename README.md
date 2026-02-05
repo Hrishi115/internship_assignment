@@ -11,6 +11,7 @@ This project provides a secure REST API with user authentication and authorizati
 Authenticated users can access protected endpoints and perform CRUD operations on a secondary entity such as tasks, notes, or items.
 
 The project follows clean backend architecture and real-world best practices.
+Try out the webapp over here: https://internship-assignment-frontend.vercel.app
 
 ---
 
