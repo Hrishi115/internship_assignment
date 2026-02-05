@@ -12,7 +12,7 @@ app = FastAPI()
 origins = [
     "http://localhost:5173",  # React dev server
     "http://127.0.0.1:5173",
-    "https://internship-assignment-frontend.vercel.app",  # Add your Vercel domain later
+    "https://internship-assignment-frontend-27wshlkk1.vercel.app",  # Add your Vercel domain later
 ]
 
 app.add_middleware(
