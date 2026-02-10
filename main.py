@@ -5,9 +5,22 @@ from routers import admin, auth, user, task
 from fastapi.middleware.cors import CORSMiddleware
 import os 
 from dotenv import load_dotenv
+from dotenv import load_dotenv
+from logging_config import get_logger
+
 load_dotenv()
 
+logger = get_logger()
+
 app = FastAPI()
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Application started")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Application shutdown")
 
 origins = [
     "http://localhost:5173",
